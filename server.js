@@ -119,17 +119,11 @@ function questionAlreadyExists(userId, questionHash) {
 
   return !!result;
 }
-
-
-// ============================================================
-// AI QUESTION GENERATION (GEMINI API)
-// ============================================================
-
 async function generateQuestions({ subjects, difficulty, previousQuestions }) {
   const previousText =
       previousQuestions.length === 0
         ? "No previous questions."
-        : previousQuestions.map((q, idx) => `${idx + 1}. ${q}`).join("\n");
+        : previousQuestions.map((q, idx) => ${idx + 1}. ${q}).join("\n");
 
   const prompt = `
 Generate exactly 5 multiple-choice interview preparation questions.
@@ -186,7 +180,7 @@ ${previousText}
   };
 
   const response = await ai.models.generateContent({
-     model: 'gemini-flash-latest',
+    model: 'gemini-2.5-flash',
     contents: prompt,
     config: {
       systemInstruction: "You are an expert technical interviewer and educator.",
@@ -201,6 +195,25 @@ ${previousText}
 
   const parsed = JSON.parse(response.text);
   return parsed.questions;
+}
+
+// ============================================================
+// AI QUESTION GENERATION (GEMINI API WITH RETRY LOGIC)
+// ============================================================
+
+
+    catch (error) {
+      lastError = error;
+      console.warn(Gemini API attempt ${attempt} failed: ${error.message});
+
+      // If server is overloaded (503), wait 2 seconds before retrying
+      if (attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 
@@ -401,5 +414,5 @@ app.get("/", (req, res) => {
 // ============================================================
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`AI Quiz backend running on port ${PORT}`);
+  console.log(AI Quiz backend running on port ${PORT});
 });
