@@ -129,7 +129,7 @@ async function generateQuestions({ subjects, difficulty, previousQuestions }) {
   const previousText =
     previousQuestions.length === 0
       ? "No previous questions."
-      : previousQuestions.map((q, idx) => ${idx + 1}. ${q}).join("\n");
+      : previousQuestions.map((q, idx) => `${idx + 1}. ${q}`).join("\n");
 
   const prompt = `
 Generate exactly 5 multiple-choice interview preparation questions.
