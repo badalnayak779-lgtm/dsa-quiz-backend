@@ -191,7 +191,7 @@ ${previousText}
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-3.8-flash",
         contents: prompt,
         config: {
           systemInstruction: "You are an expert technical interviewer and educator.",
