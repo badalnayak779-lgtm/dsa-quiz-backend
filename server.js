@@ -418,5 +418,5 @@ app.get("/", (req, res) => {
 // ============================================================
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(AI Quiz backend running on port ${PORT});
+  console.log(`AI Quiz backend running on port ${PORT}`);
 });
