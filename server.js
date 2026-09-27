@@ -119,11 +119,17 @@ function questionAlreadyExists(userId, questionHash) {
 
   return !!result;
 }
+
+
+// ============================================================
+// AI QUESTION GENERATION (WITH CLEAN RETRY LOGIC)
+// ============================================================
+
 async function generateQuestions({ subjects, difficulty, previousQuestions }) {
   const previousText =
-      previousQuestions.length === 0
-        ? "No previous questions."
-        : previousQuestions.map((q, idx) => ${idx + 1}. ${q}).join("\n");
+    previousQuestions.length === 0
+      ? "No previous questions."
+      : previousQuestions.map((q, idx) => ${idx + 1}. ${q}).join("\n");
 
   const prompt = `
 Generate exactly 5 multiple-choice interview preparation questions.
@@ -179,34 +185,32 @@ ${previousText}
     required: ["questions"]
   };
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash',
-    contents: prompt,
-    config: {
-      systemInstruction: "You are an expert technical interviewer and educator.",
-      responseMimeType: "application/json",
-      responseSchema: responseSchema,
-    }
-  });
+  const maxRetries = 3;
+  let lastError;
 
-  if (!response.text) {
-    throw new Error("AI returned an empty response.");
-  }
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          systemInstruction: "You are an expert technical interviewer and educator.",
+          responseMimeType: "application/json",
+          responseSchema: responseSchema,
+        }
+      });
 
-  const parsed = JSON.parse(response.text);
-  return parsed.questions;
-}
+      if (!response.text) {
+        throw new Error("AI returned an empty response.");
+      }
 
-// ============================================================
-// AI QUESTION GENERATION (GEMINI API WITH RETRY LOGIC)
-// ============================================================
-
-
-    catch (error) {
+      const parsed = JSON.parse(response.text);
+      return parsed.questions;
+    } catch (error) {
       lastError = error;
       console.warn(Gemini API attempt ${attempt} failed: ${error.message});
 
-      // If server is overloaded (503), wait 2 seconds before retrying
+      // If server is overloaded (503/429), pause before retrying
       if (attempt < maxRetries) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
       }
