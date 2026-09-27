@@ -186,7 +186,7 @@ ${previousText}
   };
 
   const response = await ai.models.generateContent({
-     model: 'gemini-3.8-flash',
+     model: 'gemini-flash-latest',
     contents: prompt,
     config: {
       systemInstruction: "You are an expert technical interviewer and educator.",
