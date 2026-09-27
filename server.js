@@ -208,7 +208,7 @@ ${previousText}
       return parsed.questions;
     } catch (error) {
       lastError = error;
-      console.warn(Gemini API attempt ${attempt} failed: ${error.message});
+      console.warn(`Gemini API attempt ${attempt} failed: ${error.message}`);
 
       // If server is overloaded (503/429), pause before retrying
       if (attempt < maxRetries) {
