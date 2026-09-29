@@ -141,7 +141,7 @@ async function generateQuestions({
     previousQuestions.length === 0
       ? "No previous questions."
       : previousQuestions
-          .map(`(q, idx) => ${idx + 1}. ${q}`)
+          .map((q, idx) => `${idx + 1}. ${q}`)
           .join("\n");
 
   const prompt = `
