@@ -311,7 +311,17 @@ ${previousText}
 // ============================================================
 // SAVE QUESTIONS
 // ============================================================
+console.log(
+  "Saving questions:",
+  userId,
+  questions.length
+);
 
+saveQuestions({
+  userId,
+  questions,
+  difficulty,
+});
 function saveQuestions({
   userId,
   questions,
