@@ -33,7 +33,6 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-
 // ============================================================
 // DATABASE
 // ============================================================
@@ -70,7 +69,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_questions_hash
   ON questions(question_hash);
 `);
-
 
 // ============================================================
 // HELPERS
@@ -130,7 +128,6 @@ function questionAlreadyExists(userId, questionHash) {
   return !!result;
 }
 
-
 // ============================================================
 // AI QUESTION GENERATION
 // ============================================================
@@ -140,13 +137,12 @@ async function generateQuestions({
   difficulty,
   previousQuestions,
 }) {
-
-          const previousText =
-            previousQuestions.length === 0
-              ? "No previous questions."
-              : previousQuestions
-                  .map((q, idx) => `${idx + 1}. ${q}`)
-                  .join("\n");
+  const previousText =
+    previousQuestions.length === 0
+      ? "No previous questions."
+      : previousQuestions
+          .map(`(q, idx) => ${idx + 1}. ${q}`)
+          .join("\n");
 
   const prompt = `
 Generate exactly 5 multiple-choice interview preparation questions.
@@ -235,7 +231,6 @@ ${previousText}
     additionalProperties: false,
   };
 
-
   // ============================================================
   // RETRY LOGIC
   // ============================================================
@@ -281,19 +276,21 @@ ${previousText}
 
       const parsed = JSON.parse(responseText);
 
-      if (!parsed.questions || !Array.isArray(parsed.questions)) {
+      if (
+        !parsed.questions ||
+        !Array.isArray(parsed.questions)
+      ) {
         throw new Error(
           "AI response does not contain a valid questions array."
         );
       }
 
       return parsed.questions;
-
     } catch (error) {
       lastError = error;
 
-      console.warn(
-        `Groq API attempt ${attempt} failed: ${error.message}
+      console.warn(`
+        Groq API attempt ${attempt} failed: ${error.message}
       `);
 
       if (attempt < maxRetries) {
@@ -307,21 +304,10 @@ ${previousText}
   throw lastError;
 }
 
-
 // ============================================================
 // SAVE QUESTIONS
 // ============================================================
-console.log(
-  "Saving questions:",
-  userId,
-  questions.length
-);
 
-saveQuestions({
-  userId,
-  questions,
-  difficulty,
-});
 function saveQuestions({
   userId,
   questions,
@@ -367,7 +353,6 @@ function saveQuestions({
   transaction(questions);
 }
 
-
 // ============================================================
 // GENERATE QUIZ ENDPOINT
 // ============================================================
@@ -380,7 +365,10 @@ app.post("/api/generate-quiz", async (req, res) => {
       difficulty,
     } = req.body;
 
-    // Validation
+    // ========================================================
+    // VALIDATE USER ID
+    // ========================================================
+
     if (
       typeof userId !== "string" ||
       userId.length < 3 ||
@@ -390,6 +378,10 @@ app.post("/api/generate-quiz", async (req, res) => {
         error: "Invalid userId.",
       });
     }
+
+    // ========================================================
+    // VALIDATE SUBJECTS
+    // ========================================================
 
     if (
       !Array.isArray(subjects) ||
@@ -416,6 +408,10 @@ app.post("/api/generate-quiz", async (req, res) => {
       });
     }
 
+    // ========================================================
+    // VALIDATE DIFFICULTY
+    // ========================================================
+
     const allowedDifficulties = [
       "easy",
       "medium",
@@ -428,10 +424,22 @@ app.post("/api/generate-quiz", async (req, res) => {
       });
     }
 
+    // ========================================================
+    // ENSURE USER EXISTS
+    // ========================================================
+
     ensureUser(userId);
+
+    // ========================================================
+    // GET PREVIOUS QUESTIONS
+    // ========================================================
 
     const previousQuestions =
       getPreviousQuestions(userId);
+
+    // ========================================================
+    // GENERATE 5 UNIQUE QUESTIONS
+    // ========================================================
 
     let questions = [];
     let attempts = 0;
@@ -485,6 +493,10 @@ app.post("/api/generate-quiz", async (req, res) => {
       }
     }
 
+    // ========================================================
+    // MAKE SURE WE HAVE 5 QUESTIONS
+    // ========================================================
+
     if (questions.length < 5) {
       return res.status(500).json({
         error:
@@ -492,11 +504,25 @@ app.post("/api/generate-quiz", async (req, res) => {
       });
     }
 
+    // ========================================================
+    // SAVE QUESTIONS TO DATABASE
+    // ========================================================
+
+    console.log(
+      "Saving questions:",
+      userId,
+      questions.length
+    );
+
     saveQuestions({
       userId,
       questions,
       difficulty,
     });
+
+    // ========================================================
+    // PREPARE RESPONSE FOR FLUTTER
+    // ========================================================
 
     const responseQuestions =
       questions.map(
@@ -512,10 +538,13 @@ app.post("/api/generate-quiz", async (req, res) => {
         })
       );
 
+    // ========================================================
+    // SEND QUESTIONS TO FLUTTER
+    // ========================================================
+
     res.json({
       questions: responseQuestions,
     });
-
   } catch (error) {
     console.error(
       "Generate quiz error:",
@@ -528,7 +557,6 @@ app.post("/api/generate-quiz", async (req, res) => {
     });
   }
 });
-
 
 // ============================================================
 // HISTORY ENDPOINT
@@ -577,10 +605,16 @@ app.get(
         })
       );
 
+      console.log(
+        "History requested:",
+        userId,
+        "questions:",
+        questions.length
+      );
+
       res.json({
         questions,
       });
-
     } catch (error) {
       console.error(
         "History error:",
@@ -595,7 +629,6 @@ app.get(
   }
 );
 
-
 // ============================================================
 // HEALTH CHECK
 // ============================================================
@@ -607,7 +640,6 @@ app.get("/", (req, res) => {
       "AI Quiz Backend is running.",
   });
 });
-
 
 // ============================================================
 // START SERVER
